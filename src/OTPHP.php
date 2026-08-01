@@ -2,21 +2,22 @@
 
 declare(strict_types=1);
 
-namespace OTPHP;
+namespace PamellaYamada\OTPHP;
 
-use OTPHP\Enums\OTPProvider;
-use OTPHP\Enums\OTPLanguage;
-use OTPHP\I18n\Translator;
-use OTPHP\Exceptions\InvalidCodeException;
-use OTPHP\QRCode\SVGRenderer;
+use InvalidArgumentException;
+use PamellaYamada\OTPHP\Enums\OTPLanguage;
+use PamellaYamada\OTPHP\Enums\OTPProvider;
+use PamellaYamada\OTPHP\I18n\Translator;
+use PamellaYamada\OTPHP\QRCode\SVGRenderer;
 
 /**
- *  OTPHP
- * 
+ * OTPHP
+ *
  * High-performance, zero-dependency, internationalized OTP (TOTP/HOTP) authentication engine.
- * 
+ *
  * @author Pamella Yamada de Araujo <YamadaPamella@gmail.com>
  * @license MIT
+ *
  * @link https://github.com/PamellaYamada/otphp
  */
 final class OTPHP
@@ -41,11 +42,10 @@ final class OTPHP
     /**
      * Generate an OTP code based on time (TOTP) or counter (HOTP).
      *
-     * @param string $secret Key in Base32 format.
-     * @param OTPProvider $provider Target provider configuration.
-     * @param int|null $timestamp Optional Unix timestamp for testing.
-     * @param int $counter Event counter (required for HOTP mode).
-     * 
+     * @param  string  $secret  Key in Base32 format.
+     * @param  OTPProvider  $provider  Target provider configuration.
+     * @param  int|null  $timestamp  Optional Unix timestamp for testing.
+     * @param  int  $counter  Event counter (required for HOTP mode).
      * @return string Calculated OTP code.
      */
     public static function generate(
@@ -57,23 +57,25 @@ final class OTPHP
         [$algorithm, $digits, $period, $customAlphabet] = $provider->getConfig();
 
         $binarySecret = self::decodeBase32($secret);
-        
-        $factor = match ($provider->getMode()) {
+
+        $mode = $provider->getMode();
+        $factor = match ($mode) {
             'totp' => (int) floor(($timestamp ?? time()) / $period),
             'hotp' => $counter,
+            default => throw new InvalidArgumentException("Unsupported mode: {$mode}"),
         };
 
         $packedCounter = pack('J', $factor);
         $hmacHash = hash_hmac($algorithm->value, $packedCounter, $binarySecret, true);
-        
+
         $hashLength = strlen($hmacHash);
         $offset = ord($hmacHash[$hashLength - 1]) & 0x0F;
 
         $truncatedCode = (
-            ((ord($hmacHash[$offset])     & 0x7F) << 24) |
+            ((ord($hmacHash[$offset]) & 0x7F) << 24) |
             ((ord($hmacHash[$offset + 1]) & 0xFF) << 16) |
-            ((ord($hmacHash[$offset + 2]) & 0xFF) << 8)  |
-            (ord($hmacHash[$offset + 3])  & 0xFF)
+            ((ord($hmacHash[$offset + 2]) & 0xFF) << 8) |
+            (ord($hmacHash[$offset + 3]) & 0xFF)
         );
 
         if ($customAlphabet !== null) {
@@ -83,10 +85,12 @@ final class OTPHP
                 $customOutput .= $customAlphabet[$truncatedCode % $alphabetLength];
                 $truncatedCode = (int) ($truncatedCode / $alphabetLength);
             }
+
             return $customOutput;
         }
 
         $calculatedCode = $truncatedCode % (10 ** $digits);
+
         return str_pad((string) $calculatedCode, $digits, '0', STR_PAD_LEFT);
     }
 
@@ -100,7 +104,8 @@ final class OTPHP
         int $window = 1,
         ?int $timestamp = null
     ): bool {
-        $cleanCode = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', $userCode));
+        $sanitizedUserCode = preg_replace('/[^a-zA-Z0-9]/', '', $userCode) ?? '';
+        $cleanCode = strtoupper($sanitizedUserCode);
         [, $digits, $period] = $provider->getConfig();
 
         if (strlen($cleanCode) !== $digits) {
@@ -126,7 +131,13 @@ final class OTPHP
      */
     public static function createSecret(int $length = 32): string
     {
-        $bytes = random_bytes((int) ceil($length * 5 / 8));
+        if ($length < 1) {
+            throw new \ValueError('Length must be greater than 0.');
+        }
+
+        /** @var int<1, max> $byteCount */
+        $byteCount = (int) ceil($length * 5 / 8);
+        $bytes = random_bytes($byteCount);
         $byteLength = strlen($bytes);
         $buffer = 0;
         $bitsLeft = 0;
@@ -157,7 +168,7 @@ final class OTPHP
         int $sizePixels = 200
     ): string {
         [$algorithm, $digits, $period] = $provider->getConfig();
-        $label = rawurlencode($issuer) . ':' . rawurlencode($accountName);
+        $label = rawurlencode($issuer).':'.rawurlencode($accountName);
 
         $uri = sprintf(
             'otpauth://totp/%s?secret=%s&issuer=%s&algorithm=%s&digits=%d&period=%d',
@@ -182,7 +193,7 @@ final class OTPHP
 
         for ($i = 0; $i < $length; $i++) {
             $char = $cleanSecret[$i];
-            if (!isset(self::BASE32_TABLE[$char])) {
+            if (! isset(self::BASE32_TABLE[$char])) {
                 continue;
             }
 

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OTPHP\Enums;
+namespace PamellaYamada\OTPHP\Enums;
 
 /**
  * Global languages supported by OTPHP Enterprise Engine.
  * Includes text direction metadata (LTR/RTL) for full UI compatibility.
- * 
+ *
  * @author Pamella Yamada de Araujo <YamadaPamella@gmail.com>
  */
 enum OTPLanguage: string

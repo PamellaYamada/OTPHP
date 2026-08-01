@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OTPHP\Backup;
+namespace PamellaYamada\OTPHP\Backup;
 
 final class RecoveryCodeManager
 {
     /**
-     * @param int $amount Number of recovery codes to generate
+     * @param  int  $amount  Number of recovery codes to generate
      * @return array<int, string>
      */
     public static function generate(int $amount = 8): array
@@ -16,13 +16,14 @@ final class RecoveryCodeManager
         for ($i = 0; $i < $amount; $i++) {
             $bytes = random_bytes(5);
             $hash = strtoupper(bin2hex($bytes));
-            $codes[] = substr($hash, 0, 5) . '-' . substr($hash, 5, 5);
+            $codes[] = substr($hash, 0, 5).'-'.substr($hash, 5, 5);
         }
+
         return $codes;
     }
 
     /**
-     * @param array<int, string> $codes
+     * @param  array<int, string>  $codes
      * @return array<int, string> Hashed codes for database persistence
      */
     public static function hashCodes(array $codes): array
@@ -30,6 +31,6 @@ final class RecoveryCodeManager
         // Usa a constante global \PASSWORD_ARGON2ID se existir no PHP, senão usa \PASSWORD_DEFAULT como fallback seguro
         $algo = defined('PASSWORD_ARGON2ID') ? \PASSWORD_ARGON2ID : \PASSWORD_DEFAULT;
 
-        return array_map(fn($code) => password_hash($code, $algo), $codes);
+        return array_map(fn ($code) => password_hash($code, $algo), $codes);
     }
 }

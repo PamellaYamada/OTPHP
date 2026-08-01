@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OTPHP\Enums;
+namespace PamellaYamada\OTPHP\Enums;
 
 enum OTPProvider
 {
@@ -15,7 +15,7 @@ enum OTPProvider
 
     /**
      * Get algorithm, digit count, time step, and custom alphabet settings.
-     * 
+     *
      * @return array{0: OTPAlgorithm, 1: int, 2: int, 3: string|null}
      */
     public function getConfig(): array

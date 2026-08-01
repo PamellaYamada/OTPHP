@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Tests;
+namespace PamellaYamada\OTPHP\Tests;
 
+use PamellaYamada\OTPHP\Enums\OTPLanguage;
+use PamellaYamada\OTPHP\Enums\OTPProvider;
+use PamellaYamada\OTPHP\OTPHP;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 use ValueError;
-use OTPHP\OTPHP;
-use OTPHP\Enums\OTPProvider;
-use OTPHP\Enums\OTPLanguage;
 
 final class OTPHPTestSuiteTest extends TestCase
 {
@@ -22,18 +22,18 @@ final class OTPHPTestSuiteTest extends TestCase
 
     #[TestDox('Gera e valida tokens com o número exato de dígitos de cada provedor')]
     #[DataProvider('providersDigitsProvider')]
-    public function testGeneratesAndValidatesTokensForProviders(OTPProvider $provider, int $expectedDigits): void
+    public function test_generates_and_validates_tokens_for_providers(OTPProvider $provider, int $expectedDigits): void
     {
         $secret = OTPHP::createSecret(32);
-        $code   = OTPHP::generate($secret, $provider);
+        $code = OTPHP::generate($secret, $provider);
 
         $this->assertIsString($code);
         $this->assertSame($expectedDigits, strlen($code));
-        
+
         if ($provider === OTPProvider::STEAM) {
             $this->assertMatchesRegularExpression('/^[23456789BCDFGHJKMNPQRTVWXY]{5}$/', $code);
         } else {
-            $this->assertMatchesRegularExpression('/^\d{' . $expectedDigits . '}$/', $code);
+            $this->assertMatchesRegularExpression('/^\d{'.$expectedDigits.'}$/', $code);
         }
 
         $isValid = OTPHP::verify($code, $secret, $provider);
@@ -44,11 +44,11 @@ final class OTPHPTestSuiteTest extends TestCase
     {
         return [
             'Google Authenticator (6 dígitos)' => [OTPProvider::GOOGLE, 6],
-            'Microsoft (6 dígitos)'            => [OTPProvider::MICROSOFT, 6],
-            'Bitwarden (6 dígitos)'            => [OTPProvider::BITWARDEN, 6],
-            'Steam Guard (5 caracteres)'       => [OTPProvider::STEAM, 5],
-            'YubiKey (8 dígitos)'              => [OTPProvider::YUBIKEY, 8],
-            'Aegis (8 dígitos)'                => [OTPProvider::AEGIS, 8],
+            'Microsoft (6 dígitos)' => [OTPProvider::MICROSOFT, 6],
+            'Bitwarden (6 dígitos)' => [OTPProvider::BITWARDEN, 6],
+            'Steam Guard (5 caracteres)' => [OTPProvider::STEAM, 5],
+            'YubiKey (8 dígitos)' => [OTPProvider::YUBIKEY, 8],
+            'Aegis (8 dígitos)' => [OTPProvider::AEGIS, 8],
         ];
     }
 
@@ -60,7 +60,7 @@ final class OTPHPTestSuiteTest extends TestCase
 
     #[TestDox('Gera segredos Base32 válidos (RFC 4648)')]
     #[DataProvider('validSecretLengthsProvider')]
-    public function testGeneratesValidBase32Secrets(int $length): void
+    public function test_generates_valid_base32_secrets(int $length): void
     {
         $secret = OTPHP::createSecret($length);
 
@@ -80,7 +80,7 @@ final class OTPHPTestSuiteTest extends TestCase
 
     #[TestDox('Lança ValueError do PHP ao solicitar tamanhos de bytes <= 0')]
     #[DataProvider('invalidSecretLengthsProvider')]
-    public function testThrowsExceptionForInvalidSecretLengths(int $invalidLength): void
+    public function test_throws_exception_for_invalid_secret_lengths(int $invalidLength): void
     {
         $this->expectException(ValueError::class);
         OTPHP::createSecret($invalidLength);
@@ -89,7 +89,7 @@ final class OTPHPTestSuiteTest extends TestCase
     public static function invalidSecretLengthsProvider(): array
     {
         return [
-            'Comprimento zero'     => [0],
+            'Comprimento zero' => [0],
             'Comprimento negativo' => [-1],
         ];
     }
@@ -101,10 +101,10 @@ final class OTPHPTestSuiteTest extends TestCase
     */
 
     #[TestDox('Renderiza vetor SVG válido via renderQrCodeSvg')]
-    public function testRendersValidVectorSvgQrCode(): void
+    public function test_renders_valid_vector_svg_qr_code(): void
     {
         $secret = OTPHP::createSecret(32);
-        
+
         $svg = OTPHP::renderQrCodeSvg('user@enterprise.com', $secret, 'CorporateAuth', OTPProvider::GOOGLE);
 
         $this->assertIsString($svg);
@@ -119,12 +119,12 @@ final class OTPHPTestSuiteTest extends TestCase
     */
 
     #[TestDox('Valida tolerância de desvio do relógio (Drift) com a janela temporizada')]
-    public function testClockDriftWindowTolerance(): void
+    public function test_clock_drift_window_tolerance(): void
     {
-        $secret      = OTPHP::createSecret(32);
+        $secret = OTPHP::createSecret(32);
         $currentTime = time();
 
-        $pastCode   = OTPHP::generate($secret, OTPProvider::GOOGLE, timestamp: $currentTime - 30);
+        $pastCode = OTPHP::generate($secret, OTPProvider::GOOGLE, timestamp: $currentTime - 30);
         $futureCode = OTPHP::generate($secret, OTPProvider::GOOGLE, timestamp: $currentTime + 30);
 
         // Window = 0: Rejeita passados e futuros
@@ -143,10 +143,10 @@ final class OTPHPTestSuiteTest extends TestCase
     */
 
     #[TestDox('Altera o idioma sem erros através de todos os cases registrados no Enum OTPLanguage')]
-    public function testDynamicI18nLanguageSwitching(): void
+    public function test_dynamic_i18n_language_switching(): void
     {
         $cases = OTPLanguage::cases();
-        
+
         $this->assertNotEmpty($cases, 'Enum OTPLanguage não possui cases definidos.');
 
         foreach ($cases as $language) {
@@ -162,14 +162,14 @@ final class OTPHPTestSuiteTest extends TestCase
     */
 
     #[TestDox('Retorna falso para códigos contendo caracteres alfabéticos em provedores numéricos')]
-    public function testReturnsFalseForAlphaCodeOnNumericProvider(): void
+    public function test_returns_false_for_alpha_code_on_numeric_provider(): void
     {
         $secret = OTPHP::createSecret(32);
         $this->assertFalse(OTPHP::verify('ABCDEF', $secret, OTPProvider::GOOGLE));
     }
 
     #[TestDox('Retorna falso para entradas de código totalmente vazias')]
-    public function testReturnsFalseForEmptyCodeString(): void
+    public function test_returns_false_for_empty_code_string(): void
     {
         $secret = OTPHP::createSecret(32);
         $this->assertFalse(OTPHP::verify('', $secret, OTPProvider::GOOGLE));

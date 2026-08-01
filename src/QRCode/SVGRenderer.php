@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OTPHP\QRCode;
+namespace PamellaYamada\OTPHP\QRCode;
+
+use RuntimeException;
 
 final class SVGRenderer
 {
@@ -44,6 +46,9 @@ final class SVGRenderer
         ));
     }
 
+    /**
+     * @return array<int, array<int, bool>>
+     */
     private static function generateMatrix(string $data): array
     {
         $size = 25;
@@ -59,6 +64,10 @@ final class SVGRenderer
         }
 
         $bytes = unpack('C*', $data);
+        if ($bytes === false) {
+            throw new RuntimeException('Failed to unpack data for QR code generation.');
+        }
+
         $byteIndex = 0;
         $totalBytes = count($bytes);
 
@@ -70,7 +79,7 @@ final class SVGRenderer
                 for ($c = 0; $c < 2; $c++) {
                     $x = $col - $c;
                     $y = $row;
-                    if (!$grid[$y][$x]) {
+                    if (! $grid[$y][$x]) {
                         $byteVal = $bytes[($byteIndex % $totalBytes) + 1];
                         $bitVal = ($byteVal >> ($x % 8)) & 1;
                         $grid[$y][$x] = ($bitVal === 1);
@@ -83,6 +92,9 @@ final class SVGRenderer
         return $grid;
     }
 
+    /**
+     * @param  array<int, array<int, bool>>  $grid
+     */
     private static function drawFinderPattern(array &$grid, int $startX, int $startY): void
     {
         for ($y = 0; $y < 7; $y++) {

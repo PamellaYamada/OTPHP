@@ -6,6 +6,7 @@
         "php",
         "otphp",
         "totp",
+        "hotp",
         "2fa",
         "two-factor",
         "authentication",
@@ -24,29 +25,43 @@
         }
     ],
     "require": {
-        "php": "^8.3"
+        "php": "^8.3",
+        "ext-json": "*",
+        "ext-mbstring": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.5"
-    },
+    "phpunit/phpunit": "^11.5",
+    "phpstan/phpstan": "^2.0",
+    "laravel/pint": "^1.16"
+},
     "autoload": {
         "psr-4": {
-            "OTPHP\\": "src/"
+            "PamellaYamada\\OTPHP\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/"
+            "PamellaYamada\\OTPHP\\Tests\\": "tests/"
         }
     },
     "scripts": {
-        "test": "vendor/bin/phpunit --do-not-cache-result --testdox",
-        "test:coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-text"
+        "test": "php vendor/bin/phpunit --do-not-cache-result --testdox",
+        "test:coverage": "XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-text",
+        "analyse": "php vendor/bin/phpstan analyse -l 8 src",
+        "format": "php vendor/bin/pint",
+        "check": [
+            "@format",
+            "@analyse",
+            "@test"
+        ]
     },
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     },
     "minimum-stability": "stable"
 }

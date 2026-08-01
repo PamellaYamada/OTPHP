@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OTPHP\Exceptions;
+namespace PamellaYamada\OTPHP\Exceptions;
 
 use Exception;
-use OTPHP\I18n\Translator;
+use PamellaYamada\OTPHP\I18n\Translator;
 
 /**
  * Base Exception for all OTPHP framework errors.
@@ -16,9 +16,9 @@ use OTPHP\I18n\Translator;
 class OTPException extends Exception
 {
     /**
-     * @param string $translationKey Translation dictionary key
-     * @param array<string, string|int> $placeholders Dynamic interpolation variables
-     * @param int $code HTTP/Exception code
+     * @param  string  $translationKey  Translation dictionary key
+     * @param  array<string, string|int>  $placeholders  Dynamic interpolation variables
+     * @param  int  $code  HTTP/Exception code
      */
     public function __construct(
         string $translationKey,

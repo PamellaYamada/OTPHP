@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OTPHP\Exceptions;
+namespace PamellaYamada\OTPHP\Exceptions;
 
 final class InvalidCodeException extends OTPException
 {
@@ -10,7 +10,7 @@ final class InvalidCodeException extends OTPException
     {
         return new self('invalid_code_length', [
             'expected' => $expected,
-            'actual'   => $actual,
+            'actual' => $actual,
         ]);
     }
 

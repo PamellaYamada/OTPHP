@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OTPHP\Enums;
+namespace PamellaYamada\OTPHP\Enums;
 
 enum OTPAlgorithm: string
 {

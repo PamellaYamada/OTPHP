@@ -30,8 +30,8 @@ final class SVGRenderer
             }
         }
 
-        return sprintf(
-            '<?xml version="1.0" encoding="UTF-8"?>'.
+        // Retorna a tag <svg> limpa sem o cabeçalho XML para compatibilidade universal em HTML/Browsers
+        return trim(sprintf(
             '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="%d" height="%d" viewBox="0 0 %d %d">'.
             '<rect width="100%%" height="100%%" fill="#FFFFFF"/>'.
             '%s'.
@@ -41,7 +41,7 @@ final class SVGRenderer
             $sizePixels,
             $sizePixels,
             $svgElements
-        );
+        ));
     }
 
     private static function generateMatrix(string $data): array

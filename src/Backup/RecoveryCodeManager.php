@@ -27,6 +27,9 @@ final class RecoveryCodeManager
      */
     public static function hashCodes(array $codes): array
     {
-        return array_map(fn($code) => password_hash($code, PASSWORD_ARGON2ID), $codes);
+        // Usa a constante global \PASSWORD_ARGON2ID se existir no PHP, senão usa \PASSWORD_DEFAULT como fallback seguro
+        $algo = defined('PASSWORD_ARGON2ID') ? \PASSWORD_ARGON2ID : \PASSWORD_DEFAULT;
+
+        return array_map(fn($code) => password_hash($code, $algo), $codes);
     }
 }

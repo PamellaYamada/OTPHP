@@ -9,20 +9,11 @@ use PamellaYamada\OTPHP\I18n\Translator;
 
 abstract class OTPException extends Exception
 {
-    public function __construct(
-        string $translationKey,
-        array $placeholders = [],
-        int $code = 400
-    ) {
-        $translatedMessage = Translator::trans($translationKey, $placeholders);
-        parent::__construct($translatedMessage, $code);
-    }
-
-    public function __debugInfo(): array
+    /**
+     * @param  array<string, mixed>  $placeholders
+     */
+    public function __construct(string $translationKey, array $placeholders = [], int $code = 400)
     {
-        return [
-            'message' => $this->getMessage(),
-            'code' => $this->getCode(),
-        ];
+        parent::__construct(Translator::trans($translationKey, $placeholders), $code);
     }
 }

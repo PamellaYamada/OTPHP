@@ -42,36 +42,8 @@ enum OTPLanguage: string
         };
     }
 
-    public function getNativeName(): string
+    public function getDirection(): string
     {
-        return match ($this) {
-            self::PT_BR => 'Português (Brasil)',
-            self::PT_PT => 'Português (Portugal)',
-            self::EN_US => 'English (US)',
-            self::ES_ES => 'Español',
-            self::FR_FR => 'Français',
-            self::DE_DE => 'Deutsch',
-            self::IT_IT => 'Italiano',
-            self::NL_NL => 'Nederlands',
-            self::RU_RU => 'Русский',
-            self::UK_UA => 'Українська',
-            self::PL_PL => 'Polski',
-            self::CS_CZ => 'Čeština',
-            self::EL_GR => 'Ελληνικά',
-            self::JA_JP => '日本語',
-            self::ZH_CN => '简体中文',
-            self::ZH_TW => '繁體中文',
-            self::KO_KR => '한국어',
-            self::VI_VN => 'Tiếng Việt',
-            self::TH_TH => 'ไทย',
-            self::ID_ID => 'Bahasa Indonesia',
-            self::HI_IN => 'हिन्दी',
-            self::BN_BD => 'বাংলা',
-            self::AR_SA => 'العربية',
-            self::FA_IR => 'فارسی',
-            self::HE_IL => 'עברית',
-            self::TR_TR => 'Türkçe',
-            self::SW_KE => 'Kiswahili',
-        };
+        return $this->isRtl() ? 'rtl' : 'ltr';
     }
 }

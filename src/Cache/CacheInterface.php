@@ -7,5 +7,10 @@ namespace PamellaYamada\OTPHP\Cache;
 interface CacheInterface
 {
     public function set(string $key, mixed $value, int $ttlSeconds): bool;
+
+    public function get(string $key): mixed;
+
     public function has(string $key): bool;
+
+    public function delete(string $key): bool;
 }

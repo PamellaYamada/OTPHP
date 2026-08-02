@@ -15,6 +15,7 @@ use PamellaYamada\OTPHP\I18n\Translator;
 use PamellaYamada\OTPHP\QRCode\SVGRenderer;
 use PamellaYamada\OTPHP\Security\SecurityUtils;
 use SensitiveParameter;
+use ValueError;
 
 final class OTPHP
 {
@@ -32,8 +33,12 @@ final class OTPHP
 
     public static function createSecret(int $length = 32): string
     {
-        if ($length < 32) {
-            $length = 32;
+        if ($length <= 0) {
+            throw new ValueError('O comprimento do segredo deve ser maior que zero.');
+        }
+
+        if ($length < 16) {
+            $length = 16;
         }
 
         $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -47,6 +52,13 @@ final class OTPHP
         return $secret;
     }
 
+    public static function formatSecretForHuman(string $secret): string
+    {
+        $clean = strtoupper(trim(str_replace(' ', '', $secret)));
+
+        return implode(' ', str_split($clean, 4));
+    }
+
     public static function generate(
         #[SensitiveParameter] string $secret,
         OTPProvider $provider = OTPProvider::GOOGLE,
@@ -54,7 +66,7 @@ final class OTPHP
     ): string {
         $cleanSecret = strtoupper(trim(str_replace(' ', '', $secret)));
 
-        if (!SecurityUtils::assertEntropy($cleanSecret, 128) || !preg_match('/^[A-Z2-7]+=*$/', $cleanSecret)) {
+        if (! SecurityUtils::assertEntropy($cleanSecret, 128) || ! preg_match('/^[A-Z2-7]+=*$/', $cleanSecret)) {
             throw InvalidSecretException::invalidBase32();
         }
 
@@ -62,33 +74,34 @@ final class OTPHP
         $timeStep = (int) floor(($timestamp ?? time()) / $period);
 
         $binarySecret = self::base32Decode($cleanSecret);
-        $binaryTime = pack('N*', 0) . pack('N*', $timeStep);
+        $binaryTime = pack('N*', 0).pack('N*', $timeStep);
 
         $hash = hash_hmac($algorithm->value, $binaryTime, $binarySecret, true);
 
-        // Wipe memory do segredo binário
         SecurityUtils::wipe($binarySecret);
 
         $offset = ord($hash[strlen($hash) - 1]) & 0x0F;
 
         $truncatedHash = (
-            ((ord($hash[$offset]) & 0x7f) << 24) |
-            ((ord($hash[$offset + 1]) & 0xff) << 16) |
-            ((ord($hash[$offset + 2]) & 0xff) << 8) |
-            (ord($hash[$offset + 3]) & 0xff)
+            ((ord($hash[$offset]) & 0x7F) << 24) |
+            ((ord($hash[$offset + 1]) & 0xFF) << 16) |
+            ((ord($hash[$offset + 2]) & 0xFF) << 8) |
+            (ord($hash[$offset + 3]) & 0xFF)
         );
 
         if ($customAlphabet !== null) {
             $code = '';
             $base = strlen($customAlphabet);
             for ($i = 0; $i < $digits; $i++) {
-                $code = $customAlphabet[$truncatedHash % $base] . $code;
+                $code = $customAlphabet[$truncatedHash % $base].$code;
                 $truncatedHash = (int) ($truncatedHash / $base);
             }
+
             return $code;
         }
 
         $otp = $truncatedHash % (10 ** $digits);
+
         return str_pad((string) $otp, $digits, '0', STR_PAD_LEFT);
     }
 
@@ -96,7 +109,8 @@ final class OTPHP
         #[SensitiveParameter] string $code,
         #[SensitiveParameter] string $secret,
         OTPProvider $provider = OTPProvider::GOOGLE,
-        int $window = 1
+        int $window = 1,
+        ?int $timestamp = null
     ): bool {
         $cleanCode = strtoupper(trim($code));
         [$algorithm, $digits, $period] = $provider->getConfig();
@@ -105,20 +119,17 @@ final class OTPHP
             return false;
         }
 
-        $currentTime = time();
-        $isValid = false;
+        $currentTime = $timestamp ?? time();
+        $validAccumulator = 0;
 
-        // Iteração em tempo constante contra Timing Attack
         for ($i = -$window; $i <= $window; $i++) {
             $targetTime = $currentTime + ($i * $period);
             $generatedToken = self::generate($secret, $provider, $targetTime);
 
-            if (SecurityUtils::constantTimeEquals($generatedToken, $cleanCode)) {
-                $isValid = true;
-            }
+            $validAccumulator |= SecurityUtils::constantTimeEquals($generatedToken, $cleanCode) ? 1 : 0;
         }
 
-        return $isValid;
+        return $validAccumulator === 1;
     }
 
     public static function verifyOrFail(
@@ -126,7 +137,8 @@ final class OTPHP
         #[SensitiveParameter] string $secret,
         OTPProvider $provider = OTPProvider::GOOGLE,
         ?string $userId = null,
-        int $window = 1
+        int $window = 1,
+        ?int $timestamp = null
     ): bool {
         $cleanCode = strtoupper(trim($code));
         [$algorithm, $digits, $period] = $provider->getConfig();
@@ -135,16 +147,16 @@ final class OTPHP
             throw InvalidCodeException::invalidLength($digits, strlen($cleanCode), $provider->name);
         }
 
-        $cache = self::$cache ?? new MemoryCache();
-        $cacheKey = 'otphp_used_' . hash('sha256', ($userId ?? '') . $secret . $cleanCode);
+        $cache = self::$cache ?? new MemoryCache;
+        $cacheKey = 'otphp_used_'.hash('sha256', ($userId ?? '').$secret.$cleanCode);
 
         if ($cache->has($cacheKey)) {
             throw InvalidCodeException::replayDetected();
         }
 
-        $isValid = self::verify($cleanCode, $secret, $provider, $window);
+        $isValid = self::verify($cleanCode, $secret, $provider, $window, $timestamp);
 
-        if (!$isValid) {
+        if (! $isValid) {
             throw ExpiredCodeException::expired();
         }
 
@@ -178,7 +190,7 @@ final class OTPHP
         $paddingCharCount = substr_count($secret, '=');
         $allowedPaddingCount = [6, 4, 3, 1, 0];
 
-        if (!in_array($paddingCharCount, $allowedPaddingCount, true)) {
+        if (! in_array($paddingCharCount, $allowedPaddingCount, true)) {
             throw InvalidSecretException::invalidBase32();
         }
 
@@ -198,7 +210,7 @@ final class OTPHP
 
         foreach ($eightBitBytes as $byte) {
             if (strlen($byte) === 8) {
-                $decoded .= chr((int) bindec($byte));
+                $decoded .= chr(((int) bindec($byte)) & 0xFF);
             }
         }
 

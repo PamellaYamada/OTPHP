@@ -4,213 +4,204 @@ declare(strict_types=1);
 
 namespace PamellaYamada\OTPHP;
 
-use InvalidArgumentException;
+use PamellaYamada\OTPHP\Cache\CacheInterface;
+use PamellaYamada\OTPHP\Cache\MemoryCache;
 use PamellaYamada\OTPHP\Enums\OTPLanguage;
 use PamellaYamada\OTPHP\Enums\OTPProvider;
+use PamellaYamada\OTPHP\Exceptions\ExpiredCodeException;
+use PamellaYamada\OTPHP\Exceptions\InvalidCodeException;
+use PamellaYamada\OTPHP\Exceptions\InvalidSecretException;
 use PamellaYamada\OTPHP\I18n\Translator;
 use PamellaYamada\OTPHP\QRCode\SVGRenderer;
+use PamellaYamada\OTPHP\Security\SecurityUtils;
+use SensitiveParameter;
 
-/**
- * OTPHP
- *
- * High-performance, zero-dependency, internationalized OTP (TOTP/HOTP) authentication engine.
- *
- * @author Pamella Yamada de Araujo <YamadaPamella@gmail.com>
- * @license MIT
- *
- * @link https://github.com/PamellaYamada/otphp
- */
 final class OTPHP
 {
-    private const BASE32_TABLE = [
-        'A' => 0,  'B' => 1,  'C' => 2,  'D' => 3,  'E' => 4,  'F' => 5,  'G' => 6,  'H' => 7,
-        'I' => 8,  'J' => 9,  'K' => 10, 'L' => 11, 'M' => 12, 'N' => 13, 'O' => 14, 'P' => 15,
-        'Q' => 16, 'R' => 17, 'S' => 18, 'T' => 19, 'U' => 20, 'V' => 21, 'W' => 22, 'X' => 23,
-        'Y' => 24, 'Z' => 25, '2' => 26, '3' => 27, '4' => 28, '5' => 29, '6' => 30, '7' => 31,
-    ];
+    private static ?CacheInterface $cache = null;
 
-    private const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    public static function setCache(CacheInterface $cache): void
+    {
+        self::$cache = $cache;
+    }
 
-    /**
-     * Set the global locale for framework exception messages and responses.
-     */
     public static function setLocale(OTPLanguage $locale): void
     {
         Translator::setLocale($locale);
     }
 
-    /**
-     * Generate an OTP code based on time (TOTP) or counter (HOTP).
-     *
-     * @param  string  $secret  Key in Base32 format.
-     * @param  OTPProvider  $provider  Target provider configuration.
-     * @param  int|null  $timestamp  Optional Unix timestamp for testing.
-     * @param  int  $counter  Event counter (required for HOTP mode).
-     * @return string Calculated OTP code.
-     */
+    public static function createSecret(int $length = 32): string
+    {
+        if ($length < 32) {
+            $length = 32;
+        }
+
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        $secret = '';
+        $max = strlen($alphabet) - 1;
+
+        for ($i = 0; $i < $length; $i++) {
+            $secret .= $alphabet[random_int(0, $max)];
+        }
+
+        return $secret;
+    }
+
     public static function generate(
-        string $secret,
+        #[SensitiveParameter] string $secret,
         OTPProvider $provider = OTPProvider::GOOGLE,
-        ?int $timestamp = null,
-        int $counter = 0
+        ?int $timestamp = null
     ): string {
+        $cleanSecret = strtoupper(trim(str_replace(' ', '', $secret)));
+
+        if (!SecurityUtils::assertEntropy($cleanSecret, 128) || !preg_match('/^[A-Z2-7]+=*$/', $cleanSecret)) {
+            throw InvalidSecretException::invalidBase32();
+        }
+
         [$algorithm, $digits, $period, $customAlphabet] = $provider->getConfig();
+        $timeStep = (int) floor(($timestamp ?? time()) / $period);
 
-        $binarySecret = self::decodeBase32($secret);
+        $binarySecret = self::base32Decode($cleanSecret);
+        $binaryTime = pack('N*', 0) . pack('N*', $timeStep);
 
-        $mode = $provider->getMode();
-        $factor = match ($mode) {
-            'totp' => (int) floor(($timestamp ?? time()) / $period),
-            'hotp' => $counter,
-            default => throw new InvalidArgumentException("Unsupported mode: {$mode}"),
-        };
+        $hash = hash_hmac($algorithm->value, $binaryTime, $binarySecret, true);
 
-        $packedCounter = pack('J', $factor);
-        $hmacHash = hash_hmac($algorithm->value, $packedCounter, $binarySecret, true);
+        // Wipe memory do segredo binário
+        SecurityUtils::wipe($binarySecret);
 
-        $hashLength = strlen($hmacHash);
-        $offset = ord($hmacHash[$hashLength - 1]) & 0x0F;
+        $offset = ord($hash[strlen($hash) - 1]) & 0x0F;
 
-        $truncatedCode = (
-            ((ord($hmacHash[$offset]) & 0x7F) << 24) |
-            ((ord($hmacHash[$offset + 1]) & 0xFF) << 16) |
-            ((ord($hmacHash[$offset + 2]) & 0xFF) << 8) |
-            (ord($hmacHash[$offset + 3]) & 0xFF)
+        $truncatedHash = (
+            ((ord($hash[$offset]) & 0x7f) << 24) |
+            ((ord($hash[$offset + 1]) & 0xff) << 16) |
+            ((ord($hash[$offset + 2]) & 0xff) << 8) |
+            (ord($hash[$offset + 3]) & 0xff)
         );
 
         if ($customAlphabet !== null) {
-            $alphabetLength = strlen($customAlphabet);
-            $customOutput = '';
+            $code = '';
+            $base = strlen($customAlphabet);
             for ($i = 0; $i < $digits; $i++) {
-                $customOutput .= $customAlphabet[$truncatedCode % $alphabetLength];
-                $truncatedCode = (int) ($truncatedCode / $alphabetLength);
+                $code = $customAlphabet[$truncatedHash % $base] . $code;
+                $truncatedHash = (int) ($truncatedHash / $base);
             }
-
-            return $customOutput;
+            return $code;
         }
 
-        $calculatedCode = $truncatedCode % (10 ** $digits);
-
-        return str_pad((string) $calculatedCode, $digits, '0', STR_PAD_LEFT);
+        $otp = $truncatedHash % (10 ** $digits);
+        return str_pad((string) $otp, $digits, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Verify if a user-provided code is valid within the time window.
-     */
     public static function verify(
-        string $userCode,
-        string $secret,
+        #[SensitiveParameter] string $code,
+        #[SensitiveParameter] string $secret,
         OTPProvider $provider = OTPProvider::GOOGLE,
-        int $window = 1,
-        ?int $timestamp = null
+        int $window = 1
     ): bool {
-        $sanitizedUserCode = preg_replace('/[^a-zA-Z0-9]/', '', $userCode) ?? '';
-        $cleanCode = strtoupper($sanitizedUserCode);
-        [, $digits, $period] = $provider->getConfig();
+        $cleanCode = strtoupper(trim($code));
+        [$algorithm, $digits, $period] = $provider->getConfig();
 
         if (strlen($cleanCode) !== $digits) {
             return false;
         }
 
-        $currentTime = $timestamp ?? time();
+        $currentTime = time();
+        $isValid = false;
 
+        // Iteração em tempo constante contra Timing Attack
         for ($i = -$window; $i <= $window; $i++) {
-            $testedTime = $currentTime + ($i * $period);
-            $generatedCode = self::generate($secret, $provider, $testedTime);
+            $targetTime = $currentTime + ($i * $period);
+            $generatedToken = self::generate($secret, $provider, $targetTime);
 
-            if (hash_equals($generatedCode, $cleanCode)) {
-                return true;
+            if (SecurityUtils::constantTimeEquals($generatedToken, $cleanCode)) {
+                $isValid = true;
             }
         }
 
-        return false;
+        return $isValid;
     }
 
-    /**
-     * Create a new cryptographically secure Base32 secret key.
-     */
-    public static function createSecret(int $length = 32): string
-    {
-        if ($length < 1) {
-            throw new \ValueError('Length must be greater than 0.');
+    public static function verifyOrFail(
+        #[SensitiveParameter] string $code,
+        #[SensitiveParameter] string $secret,
+        OTPProvider $provider = OTPProvider::GOOGLE,
+        ?string $userId = null,
+        int $window = 1
+    ): bool {
+        $cleanCode = strtoupper(trim($code));
+        [$algorithm, $digits, $period] = $provider->getConfig();
+
+        if (strlen($cleanCode) !== $digits) {
+            throw InvalidCodeException::invalidLength($digits, strlen($cleanCode), $provider->name);
         }
 
-        /** @var int<1, max> $byteCount */
-        $byteCount = (int) ceil($length * 5 / 8);
-        $bytes = random_bytes($byteCount);
-        $byteLength = strlen($bytes);
-        $buffer = 0;
-        $bitsLeft = 0;
-        $base32 = '';
+        $cache = self::$cache ?? new MemoryCache();
+        $cacheKey = 'otphp_used_' . hash('sha256', ($userId ?? '') . $secret . $cleanCode);
 
-        for ($i = 0; $i < $byteLength; $i++) {
-            $buffer = ($buffer << 8) | ord($bytes[$i]);
-            $bitsLeft += 8;
-
-            while ($bitsLeft >= 5) {
-                $bitsLeft -= 5;
-                $index = ($buffer >> $bitsLeft) & 0x1F;
-                $base32 .= self::BASE32_ALPHABET[$index];
-            }
+        if ($cache->has($cacheKey)) {
+            throw InvalidCodeException::replayDetected();
         }
 
-        return substr($base32, 0, $length);
+        $isValid = self::verify($cleanCode, $secret, $provider, $window);
+
+        if (!$isValid) {
+            throw ExpiredCodeException::expired();
+        }
+
+        $cache->set($cacheKey, true, $period * ($window + 1));
+
+        return true;
     }
 
-    /**
-     * Render native Vector SVG XML tag for QR Code rendering.
-     */
     public static function renderQrCodeSvg(
-        string $secret,
-        string $accountName,
+        #[SensitiveParameter] string $secret,
+        string $holder,
         string $issuer,
         OTPProvider $provider = OTPProvider::GOOGLE,
-        int $sizePixels = 200
+        int $size = 200
     ): string {
-        [$algorithm, $digits, $period] = $provider->getConfig();
-        $label = rawurlencode($issuer).':'.rawurlencode($accountName);
-
-        $uri = sprintf(
-            'otpauth://totp/%s?secret=%s&issuer=%s&algorithm=%s&digits=%d&period=%d',
-            $label,
-            self::sanitizeSecret($secret),
+        $otpauthUrl = sprintf(
+            'otpauth://totp/%s:%s?secret=%s&issuer=%s',
             rawurlencode($issuer),
-            strtoupper($algorithm->value),
-            $digits,
-            $period
+            rawurlencode($holder),
+            $secret,
+            rawurlencode($issuer)
         );
 
-        return SVGRenderer::render($uri, $sizePixels);
+        return SVGRenderer::render($otpauthUrl, $size);
     }
 
-    private static function decodeBase32(string $rawSecret): string
+    private static function base32Decode(#[SensitiveParameter] string $secret): string
     {
-        $cleanSecret = self::sanitizeSecret($rawSecret);
-        $length = strlen($cleanSecret);
-        $bufferBits = 0;
-        $bitsLeft = 0;
-        $binary = '';
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        $secret = strtoupper($secret);
+        $paddingCharCount = substr_count($secret, '=');
+        $allowedPaddingCount = [6, 4, 3, 1, 0];
 
-        for ($i = 0; $i < $length; $i++) {
-            $char = $cleanSecret[$i];
-            if (! isset(self::BASE32_TABLE[$char])) {
-                continue;
+        if (!in_array($paddingCharCount, $allowedPaddingCount, true)) {
+            throw InvalidSecretException::invalidBase32();
+        }
+
+        $secret = str_replace('=', '', $secret);
+        $binaryString = '';
+
+        for ($i = 0; $i < strlen($secret); $i++) {
+            $position = strpos($alphabet, $secret[$i]);
+            if ($position === false) {
+                throw InvalidSecretException::invalidBase32();
             }
+            $binaryString .= str_pad(decbin($position), 5, '0', STR_PAD_LEFT);
+        }
 
-            $bufferBits = ($bufferBits << 5) | self::BASE32_TABLE[$char];
-            $bitsLeft += 5;
+        $eightBitBytes = str_split($binaryString, 8);
+        $decoded = '';
 
-            if ($bitsLeft >= 8) {
-                $bitsLeft -= 8;
-                $binary .= chr(($bufferBits >> $bitsLeft) & 0xFF);
+        foreach ($eightBitBytes as $byte) {
+            if (strlen($byte) === 8) {
+                $decoded .= chr((int) bindec($byte));
             }
         }
 
-        return $binary;
-    }
-
-    private static function sanitizeSecret(string $secret): string
-    {
-        return strtoupper(str_replace([' ', '-', '_', '.', "\t", "\n", "\r", '='], '', $secret));
+        return $decoded;
     }
 }

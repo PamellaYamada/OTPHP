@@ -7,19 +7,8 @@ namespace PamellaYamada\OTPHP\Exceptions;
 use Exception;
 use PamellaYamada\OTPHP\I18n\Translator;
 
-/**
- * Base Exception for all OTPHP framework errors.
- * Automatically translates error messages based on active locale.
- *
- * @author Pamella Yamada de Araujo <YamadaPamella@gmail.com>
- */
-class OTPException extends Exception
+abstract class OTPException extends Exception
 {
-    /**
-     * @param  string  $translationKey  Translation dictionary key
-     * @param  array<string, string|int>  $placeholders  Dynamic interpolation variables
-     * @param  int  $code  HTTP/Exception code
-     */
     public function __construct(
         string $translationKey,
         array $placeholders = [],
@@ -27,5 +16,13 @@ class OTPException extends Exception
     ) {
         $translatedMessage = Translator::trans($translationKey, $placeholders);
         parent::__construct($translatedMessage, $code);
+    }
+
+    public function __debugInfo(): array
+    {
+        return [
+            'message' => $this->getMessage(),
+            'code' => $this->getCode(),
+        ];
     }
 }

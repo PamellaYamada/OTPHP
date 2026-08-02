@@ -8,221 +8,254 @@ use PamellaYamada\OTPHP\Enums\OTPLanguage;
 
 final class Translator
 {
-    private static OTPLanguage $locale = OTPLanguage::EN_US;
+    private static OTPLanguage $locale = OTPLanguage::PT_BR;
 
-    /** @var array<string, array<string, string>> */
+    /**
+     * Dicionário completo cobrindo todos os 27 idiomas suportados pelo Enum OTPLanguage.
+     *
+     * @var array<string, array<string, string>>
+     */
     private static array $dictionary = [
-        'en_US' => [
-            'invalid_code_length' => 'The provided code length is invalid for :provider. Expected :expected, got :actual.',
-            'invalid_base32' => 'The secret key contains invalid Base32 characters.',
-            'code_expired' => 'The authentication code has expired or is outside the valid time window.',
-            'replay_attack' => 'Security Alert: This code has already been used.',
-            'provider_mismatch' => 'Secret key format does not match rules for :provider.',
-        ],
+        // 1. Português (Brasil)
         'pt_BR' => [
-            'invalid_code_length' => 'O tamanho do código é inválido para :provider. Esperado :expected, recebido :actual.',
-            'invalid_base32' => 'A chave secreta contém caracteres Base32 inválidos.',
-            'code_expired' => 'O código de autenticação expirou ou está fora da janela de tempo.',
-            'replay_attack' => 'Alerta de Segurança: Este código já foi utilizado.',
-            'provider_mismatch' => 'O formato da chave secreta não coincide com :provider.',
+            'code_expired'          => 'O código informado expirou ou é inválido.',
+            'invalid_code_length'   => 'O código deve conter exatamente :expected caracteres para o provedor :provider (fornecido: :actual).',
+            'invalid_secret_base32' => 'A chave secreta não é uma string Base32 válida ou não possui entropia suficiente.',
+            'replay_attack'         => 'Ataque de reutilização detectado. Este código já foi utilizado.',
+            'provider_mismatch'     => 'A chave não é compatível com o provedor :provider.',
         ],
+        // 2. Português (Portugal)
         'pt_PT' => [
-            'invalid_code_length' => 'O comprimento do código é inválido para :provider. Esperado :expected, obtido :actual.',
-            'invalid_base32' => 'A chave secreta contém carateres Base32 inválidos.',
-            'code_expired' => 'O código de autenticação expirou.',
-            'replay_attack' => 'Alerta de Segurança: Este código já foi utilizado.',
-            'provider_mismatch' => 'O formato da chave secreta não coincide com :provider.',
+            'code_expired'          => 'O código introduzido expirou ou é inválido.',
+            'invalid_code_length'   => 'O código deve conter exatamente :expected carateres para o fornecedor :provider (fornecido: :actual).',
+            'invalid_secret_base32' => 'A chave secreta não é uma string Base32 válida ou não possui entropia suficiente.',
+            'replay_attack'         => 'Ataque de reutilização detetado. Este código já foi utilizado.',
+            'provider_mismatch'     => 'A chave não é compatível com o fornecedor :provider.',
         ],
+        // 3. Inglês (EUA)
+        'en_US' => [
+            'code_expired'          => 'The provided code has expired or is invalid.',
+            'invalid_code_length'   => 'Code must be exactly :expected characters for provider :provider (given: :actual).',
+            'invalid_secret_base32' => 'The secret key is not a valid Base32 string or lacks entropy.',
+            'replay_attack'         => 'Replay attack detected. This code has already been used.',
+            'provider_mismatch'     => 'Secret key mismatch for provider :provider.',
+        ],
+        // 4. Espanhol
         'es_ES' => [
-            'invalid_code_length' => 'La longitud del código no es válida para :provider. Esperado :expected, obtenido :actual.',
-            'invalid_base32' => 'La clave secreta contiene caracteres Base32 no válidos.',
-            'code_expired' => 'El código de autenticación ha expirado.',
-            'replay_attack' => 'Alerta de Seguridad: El código ya ha sido utilizado.',
-            'provider_mismatch' => 'El formato de la clave no coincide con :provider.',
+            'code_expired'          => 'El código proporcionado ha expirado o no es válido.',
+            'invalid_code_length'   => 'El código debe tener exactamente :expected caracteres para :provider (proporcionado: :actual).',
+            'invalid_secret_base32' => 'La clave secreta no es una cadena Base32 válida o carece de entropía.',
+            'replay_attack'         => 'Ataque de reutilización detectado. Este código ya ha sido utilizado.',
+            'provider_mismatch'     => 'Incompatibilidad de clave para el proveedor :provider.',
         ],
+        // 5. Francês
         'fr_FR' => [
-            'invalid_code_length' => 'La longueur du code est invalide pour :provider. Attendu :expected, reçu :actual.',
-            'invalid_base32' => 'La clé secrète contient des caractères Base32 invalides.',
-            'code_expired' => 'Le code d\'authentification a expiré.',
-            'replay_attack' => 'Alerte de Sécurité: Le code a déjà été utilisé.',
-            'provider_mismatch' => 'Le format de la clé secrète ne correspond pas à :provider.',
+            'code_expired'          => 'Le code fourni a expiré ou est invalide.',
+            'invalid_code_length'   => 'Le code doit contenir exactement :expected caractères pour le fournisseur :provider (fourni: :actual).',
+            'invalid_secret_base32' => 'La clé secrète n\'est pas une chaîne Base32 valide ou manque d\'entropie.',
+            'replay_attack'         => 'Attaque par rejeu détectée. Ce code a déjà été utilisé.',
+            'provider_mismatch'     => 'Incompatibilité de clé pour le fournisseur :provider.',
         ],
+        // 6. Alemão
         'de_DE' => [
-            'invalid_code_length' => 'Die Codelänge ist für :provider ungültig. Erwartet: :expected, erhalten: :actual.',
-            'invalid_base32' => 'Der Sicherheitsschlüssel enthält ungültige Base32-Zeichen.',
-            'code_expired' => 'Der Authentifizierungscode ist abgelaufen.',
-            'replay_attack' => 'Sicherheitswarnung: Code wurde bereits verwendet.',
-            'provider_mismatch' => 'Das Schlüsselformat entspricht nicht :provider.',
+            'code_expired'          => 'Der eingegebene Code ist abgelaufen oder ungültig.',
+            'invalid_code_length'   => 'Der Code muss genau :expected Zeichen für den Anbieter :provider lang sein (angegeben: :actual).',
+            'invalid_secret_base32' => 'Der Geheimschlüssel ist kein gültiger Base32-String oder hat unzureichende Entropie.',
+            'replay_attack'         => 'Replay-Angriff erkannt. Dieser Code wurde bereits verwendet.',
+            'provider_mismatch'     => 'Schlüssel stimmt nicht mit dem Anbieter :provider überein.',
         ],
+        // 7. Italiano
         'it_IT' => [
-            'invalid_code_length' => 'La lunghezza del codice non è valida per :provider. Atteso :expected, ricevuto :actual.',
-            'invalid_base32' => 'La chiave segreta contiene caratteri Base32 non validi.',
-            'code_expired' => 'Il codice di autenticazione è scaduto.',
-            'replay_attack' => 'Avviso di sicurezza: il codice è già stato utilizzato.',
-            'provider_mismatch' => 'Il formato della chiave non corrisponde a :provider.',
+            'code_expired'          => 'Il codice fornito è scaduto o non è valido.',
+            'invalid_code_length'   => 'Il codice deve contenere esattamente :expected caratteri per il provider :provider (fornito: :actual).',
+            'invalid_secret_base32' => 'La chiave segreta non è una stringa Base32 valida o manca di entropia.',
+            'replay_attack'         => 'Attacco di replay rilevato. Questo codice è già stato utilizzato.',
+            'provider_mismatch'     => 'Incompatibilità della chiave segreta per il provider :provider.',
         ],
+        // 8. Holandês
         'nl_NL' => [
-            'invalid_code_length' => 'De codelengte is ongeldig voor :provider. Verwacht :expected, gekregen :actual.',
-            'invalid_base32' => 'De geheimcode bevat ongeldige Base32-tekens.',
-            'code_expired' => 'De authenticatiecode is verlopen.',
-            'replay_attack' => 'Beveiligingswaarschuwing: Code is al gebruikt.',
-            'provider_mismatch' => 'Sleutelformaat komt niet overeen met :provider.',
+            'code_expired'          => 'De opgegeven code is verlopen of ongeldig.',
+            'invalid_code_length'   => 'De code moet precies :expected tekens lang zijn voor provider :provider (opgegeven: :actual).',
+            'invalid_secret_base32' => 'De geheime sleutel is geen geldige Base32-tekenreeks of mist entropie.',
+            'replay_attack'         => 'Replay-aanval gedetecteerd. Deze code is al gebruikt.',
+            'provider_mismatch'     => 'Sleutel komt niet overeen met provider :provider.',
         ],
+        // 9. Russo
         'ru_RU' => [
-            'invalid_code_length' => 'Неверная длина кода для :provider. Ожидалось :expected, получено :actual.',
-            'invalid_base32' => 'Секретный ключ содержит недопустимые символы Base32.',
-            'code_expired' => 'Срок действия кода аутентификации истек.',
-            'replay_attack' => 'Предупреждение о безопасности: код уже использован.',
-            'provider_mismatch' => 'Формат ключа не соответствует требованиям :provider.',
+            'code_expired'          => 'Введенный код истек или недействителен.',
+            'invalid_code_length'   => 'Код должен содержать ровно :expected символов для провайдера :provider (введено: :actual).',
+            'invalid_secret_base32' => 'Секретный ключ не является валидной строкой Base32 или имеет низкую энтропию.',
+            'replay_attack'         => 'Обнаружена повторная атака. Этот код уже использовался.',
+            'provider_mismatch'     => 'Секретный ключ не подходит для провайдера :provider.',
         ],
+        // 10. Ucraniano
         'uk_UA' => [
-            'invalid_code_length' => 'Недійсне значення довжини коду для :provider. Очікувалося :expected, отримано :actual.',
-            'invalid_base32' => 'Секретний ключ містить неприпустимі символи Base32.',
-            'code_expired' => 'Термін дії коду автентифікації закінчився.',
-            'replay_attack' => 'Попередження безпеки: Код вже використано.',
-            'provider_mismatch' => 'Формат ключа не відповідає :provider.',
+            'code_expired'          => 'Введений код вичерпав термін дії або є недійсним.',
+            'invalid_code_length'   => 'Код повинен містити точно :expected символів для провайдера :provider (введено: :actual).',
+            'invalid_secret_base32' => 'Секретний ключ не є валідною строкою Base32 або має недостатньо ентропії.',
+            'replay_attack'         => 'Виявлено повторну атаку. Цей код вже використовувався.',
+            'provider_mismatch'     => 'Секретний ключ не відповідає провайдеру :provider.',
         ],
+        // 11. Polonês
         'pl_PL' => [
-            'invalid_code_length' => 'Nieprawidłowa długość kodu dla :provider. Oczekiwano :expected, otrzymano :actual.',
-            'invalid_base32' => 'Klucz prywatny zawiera nieprawidłowe znaki Base32.',
-            'code_expired' => 'Kod uwierzytelniający wygasł.',
-            'replay_attack' => 'Ostrzeżenie o bezpieczeństwie: Kod został już użyty.',
-            'provider_mismatch' => 'Format klucza jest niezgodny z :provider.',
+            'code_expired'          => 'Podany kod wygasł lub jest nieprawidłowy.',
+            'invalid_code_length'   => 'Kod musi mieć dokładnie :expected znaków dla dostawcy :provider (podano: :actual).',
+            'invalid_secret_base32' => 'Klucz prywatny nie jest prawidłowym ciągiem Base32 lub ma zbyt niską entropię.',
+            'replay_attack'         => 'Wykryto atak typu replay. Ten kod został już użyty.',
+            'provider_mismatch'     => 'Niezgodność klucza dla dostawcy :provider.',
         ],
+        // 12. Checo
         'cs_CZ' => [
-            'invalid_code_length' => 'Neplatná délka kódu pro :provider. Očekáváno :expected, obdrženo :actual.',
-            'invalid_base32' => 'Tajný klíč obsahuje neplatné znaky Base32.',
-            'code_expired' => 'Platnost ověřovacího kódu vypršela.',
-            'replay_attack' => 'Bezpečnostní upozornění: Kód již byl použit.',
-            'provider_mismatch' => 'Formát klíče neodpovídá :provider.',
+            'code_expired'          => 'Zadaný kód vypršel nebo je neplatný.',
+            'invalid_code_length'   => 'Kód musí mít přesně :expected znaků pro poskytovatele :provider (zadáno: :actual).',
+            'invalid_secret_base32' => 'Tajný klíč není platný řetězec Base32 nebo nemá dostatečnou entropii.',
+            'replay_attack'         => 'Zjištěn opakovaný útok (replay attack). Tento kód již byl použit.',
+            'provider_mismatch'     => 'Nesoulad tajného klíče pro poskytovatele :provider.',
         ],
+        // 13. Grego
         'el_GR' => [
-            'invalid_code_length' => 'Μη έγκυρο μήκος κωδικού για :provider. Αναμενόταν :expected, λήφθηκε :actual.',
-            'invalid_base32' => 'Το μυστικό κλειδί περιέχει μη έγκυρους χαρακτήρες Base32.',
-            'code_expired' => 'Ο κωδικός επαλήθευσης έχει λήξει.',
-            'replay_attack' => 'Ειδοποίηση ασφαλείας: Ο κωδικός έχει ήδη χρησιμοποιηθεί.',
-            'provider_mismatch' => 'Η μορφή του κλειδιού δεν ταιριάζει με το :provider.',
+            'code_expired'          => 'Ο κωδικός που δόθηκε έχει λήξει ή είναι άκυρος.',
+            'invalid_code_length'   => 'Ο κωδικός πρέπει να έχει ακριβώς :expected χαρακτήρες για τον πάροχο :provider (δόθηκαν: :actual).',
+            'invalid_secret_base32' => 'Το μυστικό κλειδί δεν είναι έγκυρη συμβολοσειρά Base32 ή στερείται εντροπίας.',
+            'replay_attack'         => 'Εντοπίστηκε επίθεση επανάληψης (replay attack). Αυτός ο κωδικός έχει ήδη χρησιμοποιηθεί.',
+            'provider_mismatch'     => 'Ασυμβατότητα μυστικού κλειδιού για τον πάροχο :provider.',
         ],
+        // 14. Japonês
         'ja_JP' => [
-            'invalid_code_length' => ':provider のコード長が無効です。期待値: :expected、入力値: :actual。',
-            'invalid_base32' => 'シークレットキーに無効なBase32文字が含まれています。',
-            'code_expired' => '認証コードの有効期限が切れています。',
-            'replay_attack' => 'セキュリティ警告: このコードは既に使用されています。',
-            'provider_mismatch' => 'シークレットキーの形式が :provider のルールと一致しません。',
+            'code_expired'          => '入力されたコードは期限切れか無効です。',
+            'invalid_code_length'   => 'プロバイダー :provider のコードは正確に :expected 文字である必要があります (入力値: :actual)。',
+            'invalid_secret_base32' => 'シークレットキーが有効な Base32 文字列でないか、エントロピーが不足しています。',
+            'replay_attack'         => 'リプレイ攻撃が検知されました。このコードは既に使用されています。',
+            'provider_mismatch'     => 'プロバイダー :provider のシークレットキーが一致しません。',
         ],
+        // 15. Chinês Simplificado
         'zh_CN' => [
-            'invalid_code_length' => ':provider 的验证码长度无效。预期 :expected，实际 :actual。',
-            'invalid_base32' => '密钥包含无效的 Base32 字符。',
-            'code_expired' => '验证码已过期。',
-            'replay_attack' => '安全警报：该验证码已被使用。',
-            'provider_mismatch' => '密钥格式与 :provider 不符。',
+            'code_expired'          => '提供的验证码已过期或无效。',
+            'invalid_code_length'   => '提供商 :provider 的验证码必须恰好为 :expected 位（输入为：:actual）。',
+            'invalid_secret_base32' => '密钥不是有效的 Base32 字符串或熵不足。',
+            'replay_attack'         => '检测到重放攻击。该验证码已被使用。',
+            'provider_mismatch'     => '提供商 :provider 的密钥不匹配。',
         ],
+        // 16. Chinês Tradicional
         'zh_TW' => [
-            'invalid_code_length' => ':provider 的驗證碼長度無效。預期 :expected，實際 :actual。',
-            'invalid_base32' => '金鑰包含無效的 Base32 字元。',
-            'code_expired' => '驗證碼已過期。',
-            'replay_attack' => '安全警報：該驗證碼已被使用。',
-            'provider_mismatch' => '金鑰格式與 :provider 不符。',
+            'code_expired'          => '提供的驗證碼已過期或無效。',
+            'invalid_code_length'   => '提供者 :provider 的驗證碼必須恰好為 :expected 位（輸入為：:actual）。',
+            'invalid_secret_base32' => '金鑰不是有效的 Base32 字串或熵不足。',
+            'replay_attack'         => '檢測到重放攻擊。該驗證碼已被使用。',
+            'provider_mismatch'     => '提供者 :provider 的金鑰不匹配。',
         ],
+        // 17. Coreano
         'ko_KR' => [
-            'invalid_code_length' => ':provider 의 코드 길이가 올바르지 않습니다. 예상: :expected, 입력: :actual.',
-            'invalid_base32' => '비밀 키에 유효하지 않은 Base32 문자가 포함되어 있습니다.',
-            'code_expired' => '인증 코드가 만료되었습니다.',
-            'replay_attack' => '보안 경고: 이미 사용된 코드입니다.',
-            'provider_mismatch' => '비밀 키 형식이 :provider 규칙과 일치하지 않습니다.',
+            'code_expired'          => '제공된 코드가 만료되었거나 유효하지 않습니다.',
+            'invalid_code_length'   => ':provider 서비스의 코드는 정확히 :expected 자리어야 합니다 (입력값: :actual).',
+            'invalid_secret_base32' => '시크릿 키가 유효한 Base32 문자열이 아니거나 엔트로피가 부족합니다.',
+            'replay_attack'         => '재전송 공격(Replay Attack)이 감지되었습니다. 이 코드는 이미 사용되었습니다.',
+            'provider_mismatch'     => ':provider 서비스의 시크릿 키가 일치하지 않습니다.',
         ],
+        // 18. Vietnamita
         'vi_VN' => [
-            'invalid_code_length' => 'Độ dài mã không hợp lệ cho :provider. Kỳ vọng :expected, nhận được :actual.',
-            'invalid_base32' => 'Khóa bí mật chứa ký tự Base32 không hợp lệ.',
-            'code_expired' => 'Mã xác thực đã hết hạn.',
-            'replay_attack' => 'Cảnh báo bảo mật: Mã này đã được sử dụng.',
-            'provider_mismatch' => 'Định dạng khóa không phù hợp với :provider.',
+            'code_expired'          => 'Mã đã cung cấp đã hết hạn hoặc không hợp lệ.',
+            'invalid_code_length'   => 'Mã phải có đúng :expected ký tự cho nhà cung cấp :provider (đã nhập: :actual).',
+            'invalid_secret_base32' => 'Khóa bí mật không phải là chuỗi Base32 hợp lệ hoặc thiếu độ hỗn loạn (entropy).',
+            'replay_attack'         => 'Phát hiện cuộc tấn công phát lại (replay attack). Mã này đã được sử dụng.',
+            'provider_mismatch'     => 'Khóa bí mật không khớp với nhà cung cấp :provider.',
         ],
+        // 19. Tailandês
         'th_TH' => [
-            'invalid_code_length' => 'ความยาวรหัสไม่ถูกต้องสำหรับ :provider คาดหวัง :expected ได้รับ :actual',
-            'invalid_base32' => 'คีย์ลับมีอักขระ Base32 ที่ไม่ถูกต้อง',
-            'code_expired' => 'รหัสยืนยันหมดอายุแล้ว',
-            'replay_attack' => 'แจ้งเตือนความปลอดภัย: รหัสนี้ถูกใช้งานไปแล้ว',
-            'provider_mismatch' => 'รูปแบบคีย์ลับไม่ตรงกับ :provider',
+            'code_expired'          => 'รหัสที่ระบุหมดอายุหรือไม่ถูกต้อง',
+            'invalid_code_length'   => 'รหัสต้องมีความยาวถูกต้อง :expected หลักสำหรับผู้ให้บริการ :provider (ที่ระบุ: :actual)',
+            'invalid_secret_base32' => 'คีย์ลับไม่ใช่สตริง Base32 ที่ถูกต้อง หรือมีความหนาแน่นของข้อมูลไม่เพียงพอ',
+            'replay_attack'         => 'ตรวจพบการโจมตีแบบ Replay รหัสนี้ถูกใช้งานไปแล้ว',
+            'provider_mismatch'     => 'คีย์ลับไม่ตรงกับผู้ให้บริการ :provider',
         ],
+        // 20. Indonésio
         'id_ID' => [
-            'invalid_code_length' => 'Panjang kode tidak valid untuk :provider. Diharapkan :expected, diterima :actual.',
-            'invalid_base32' => 'Kunci rahasia mengandung karakter Base32 yang tidak valid.',
-            'code_expired' => 'Kode otentikasi telah kadaluwarsa.',
-            'replay_attack' => 'Peringatan Keamanan: Kode ini sudah digunakan.',
-            'provider_mismatch' => 'Format kunci tidak cocok dengan :provider.',
+            'code_expired'          => 'Kode yang diberikan telah kedaluwarsa atau tidak valid.',
+            'invalid_code_length'   => 'Kode harus persis :expected karakter untuk penyedia :provider (diberikan: :actual).',
+            'invalid_secret_base32' => 'Kunci rahasia bukan string Base32 yang valid atau kurang entropi.',
+            'replay_attack'         => 'Serangan replay terdeteksi. Kode ini sudah digunakan.',
+            'provider_mismatch'     => 'Kunci rahasia tidak cocok untuk penyedia :provider.',
         ],
+        // 21. Hindi
         'hi_IN' => [
-            'invalid_code_length' => ':provider के लिए कोड की लंबाई अमान्य है। अपेक्षित :expected, प्राप्त :actual।',
-            'invalid_base32' => 'सीक्रेट कुंजी में अमान्य Base32 वर्ण शामिल हैं।',
-            'code_expired' => 'प्रमाणीकरण कोड की समयावधि समाप्त हो गई है।',
-            'replay_attack' => 'सुरक्षा चेतावनी: यह कोड पहले ही उपयोग किया जा चुका है।',
-            'provider_mismatch' => 'कुंजी प्रारूप :provider के नियमों से मेल नहीं खाता।',
+            'code_expired'          => 'प्रदान किया गया कोड समाप्त हो गया है या अमान्य है।',
+            'invalid_code_length'   => 'प्रदाता :provider के लिए कोड सटीक :expected अक्षरों का होना चाहिए (दिया गया: :actual)।',
+            'invalid_secret_base32' => 'गुप्त कुंजी एक मान्य Base32 स्ट्रिंग नहीं है या इसमें पर्याप्त एन्ट्रापी नहीं है।',
+            'replay_attack'         => 'रीप्ले हमले का पता चला। यह कोड पहले ही उपयोग किया जा चुका है।',
+            'provider_mismatch'     => 'प्रदाता :provider के लिए गुप्त कुंजी बेमेल है।',
         ],
+        // 22. Bengali
         'bn_BD' => [
-            'invalid_code_length' => ':provider এর জন্য কোডের দৈর্ঘ্য সঠিক নয়। প্রত্যাশিত :expected, পাওয়া গেছে :actual।',
-            'invalid_base32' => 'গোপন কী-তে অবৈধ Base32 অক্ষর রয়েছে।',
-            'code_expired' => 'প্রমাণীকরণ কোডের মেয়াদ শেষ হয়ে গেছে।',
-            'replay_attack' => 'নিরাপত্তা সতর্কতা: এই কোডটি ইতিমধ্যে ব্যবহার করা হয়েছে।',
-            'provider_mismatch' => 'কী বিন্যাস :provider এর সাথে মিলছে না।',
+            'code_expired'          => 'প্রদান করা কোডটির মেয়াদ শেষ হয়ে গেছে বা অকার্যকর।',
+            'invalid_code_length'   => ':provider প্রোভাইডারের জন্য কোডটি ঠিক :expected অক্ষরের হতে হবে (দেওয়া হয়েছে: :actual)।',
+            'invalid_secret_base32' => 'গোপন কী-টি একটি সঠিক Base32 স্ট্রিং নয় বা এতে এন্ট্রপির অভাব রয়েছে।',
+            'replay_attack'         => 'রিপ্লে অ্যাটাক শনাক্ত হয়েছে। এই কোডটি আগেই ব্যবহার করা হয়েছে।',
+            'provider_mismatch'     => ':provider প্রোভাইডারের সাথে গোপন কী মিলছে না।',
         ],
+        // 23. Árabe (RTL)
         'ar_SA' => [
-            'invalid_code_length' => 'طول الرمز غير صالحة لـ :provider. المتوقع :expected، المستلم :actual.',
-            'invalid_base32' => 'المفتاح السري يحتوي على أحرف Base32 غير صالحة.',
-            'code_expired' => 'انتهت صلاحية رمز المصادقة.',
-            'replay_attack' => 'تنبيه أمني: تم استخدام هذا الرمز من قبل.',
-            'provider_mismatch' => 'تنسيق المفتاح لا يتوافق مع :provider.',
+            'code_expired'          => 'الرمز المدخل منتهي الصلاحية أو غير صالح.',
+            'invalid_code_length'   => 'يجب أن يتكون الرمز من :expected خانة لمزوّد الخدمة :provider (المدخل: :actual).',
+            'invalid_secret_base32' => 'المفتاح السري ليس سلسلة Base32 صالحة أو يفتقر إلى العشوائية الكافية.',
+            'replay_attack'         => 'تم إكتشاف هجوم إعادة استخدام الرمز (Replay Attack). هذا الرمز تم استخدامه سابقاً.',
+            'provider_mismatch'     => 'المفتاح السري غير متوافق مع المزوّد :provider.',
         ],
+        // 24. Persa (RTL)
         'fa_IR' => [
-            'invalid_code_length' => 'طول کد برای :provider نامعتبر است. مورد انتظار :expected، دریافت شده :actual.',
-            'invalid_base32' => 'کلید امنیتی حاوی کاراکترهای Base32 نامعتبر است.',
-            'code_expired' => 'کد تایید منقضی شده است.',
-            'replay_attack' => 'هشدار امنیتی: این کد قبلاً استفاده شده است.',
-            'provider_mismatch' => 'فرمت کلید با :provider مطابقت ندارد.',
+            'code_expired'          => 'کد وارد شده منقضی شده یا نامعتبر است.',
+            'invalid_code_length'   => 'کد باید دقیقا شامل :expected کاراکتر برای ارائه دهنده :provider باشد (وارد شده: :actual).',
+            'invalid_secret_base32' => 'کلید مخفی یک رشته Base32 معتبر نیست یا فاقد انتروپی کافی است.',
+            'replay_attack'         => 'حمله بازپخش (Replay Attack) تشخیص داده شد. این کد قبلاً استفاده شده است.',
+            'provider_mismatch'     => 'عدم تطابق کلید مخفی برای ارائه دهنده :provider.',
         ],
+        // 25. Hebraico (RTL)
         'he_IL' => [
-            'invalid_code_length' => 'אורך הקוד אינו תקין עבור :provider. צפוי :expected, התקבל :actual.',
-            'invalid_base32' => 'המפתח הסודי מכיל תווים שאינם תקינים ב-Base32.',
-            'code_expired' => 'פג תוקפו של קוד האימות.',
-            'replay_attack' => 'התראת אבטחה: קוד זה כבר היה בשימוש.',
-            'provider_mismatch' => 'פורמט המפתח אינו תואם ל-:provider.',
+            'code_expired'          => 'הקוד שסופק פג תוקף או אינו תקין.',
+            'invalid_code_length'   => 'הקוד חייב להכיל בדיוק :expected תווים עבור הספק :provider (סופק: :actual).',
+            'invalid_secret_base32' => 'המפתח הסודי אינו מחרוזת Base32 תקינה או שחסרה לו אנטרופיה.',
+            'replay_attack'         => 'זוהתה התקפת שחזור (Replay Attack). קוד זה כבר היה בשימוש.',
+            'provider_mismatch'     => 'אי התאמה במפתח הסודי עבור הספק :provider.',
         ],
+        // 26. Turco
         'tr_TR' => [
-            'invalid_code_length' => ':provider için kod uzunluğu geçersiz. Beklenen :expected, alınan :actual.',
-            'invalid_base32' => 'Gizli anahtar geçersiz Base32 karakterleri içeriyor.',
-            'code_expired' => 'Doğrulama kodunun süresi doldu.',
-            'replay_attack' => 'Güvenlik Uyarısı: Bu kod zaten kullanıldı.',
-            'provider_mismatch' => 'Anahtar biçimi :provider kurallarıyla eşleşmiyor.',
+            'code_expired'          => 'Sağlanan kodun süresi dolmuş veya geçersiz.',
+            'invalid_code_length'   => ':provider sağlayıcısı için kod tam olarak :expected karakter olmalıdır (sağlanan: :actual).',
+            'invalid_secret_base32' => 'Gizli anahtar geçerli bir Base32 dizesi değil veya yetersiz entropiye sahip.',
+            'replay_attack'         => 'Yeniden oynatma saldırısı (Replay Attack) algılandı. Bu kod zaten kullanılmış.',
+            'provider_mismatch'     => ':provider sağlayıcısı için gizli anahtar uyuşmazlığı.',
         ],
+        // 27. Swahili
         'sw_KE' => [
-            'invalid_code_length' => 'Urefu wa msimbo si halali kwa :provider. Inatarajiwa :expected, imepokelewa :actual.',
-            'invalid_base32' => 'Ufunguo wa siri una viboreshaji visivyo halali vya Base32.',
-            'code_expired' => 'Msimbo wa uthibitisho umekwisha muda wake.',
-            'replay_attack' => 'Tahadhari ya Usalama: Msimbo huu tayari umetumika.',
-            'provider_mismatch' => 'Muundo wa ufunguo haulingani na :provider.',
+            'code_expired'          => 'Kodi iliyotolewa imหมหมisha muda wake au si sahihi.',
+            'invalid_code_length'   => 'Kodi lazima iwe na herufi :expected kamili kwa mtoa huduma :provider (uliyotenda: :actual).',
+            'invalid_secret_base32' => 'Ufunguo wa siri si mfuatano halali wa Base32 au unakosa entropia ya kutosha.',
+            'replay_attack'         => 'Shambulio la kurudia kodi (Replay Attack) limegunduliwa. Kodi hii tayari imeshatumika.',
+            'provider_mismatch'     => 'Ufunguo wa siri haufanani na mtoa huduma :provider.',
         ],
     ];
 
+    /**
+     * Define o idioma ativo do sistema i18n.
+     */
     public static function setLocale(OTPLanguage $locale): void
     {
         self::$locale = $locale;
     }
 
-    public static function getLocale(): OTPLanguage
-    {
-        return self::$locale;
-    }
-
     /**
-     * @param  array<string, string|int>  $replace
+     * Traduz uma chave e substitui os placeholders dinâmicos.
+     *
+     * @param string $key Chave de tradução
+     * @param array<string, mixed> $placeholders Variáveis para interpolação
+     * @return string Mensagem traduzida e formatada
      */
-    public static function trans(string $key, array $replace = []): string
+    public static function trans(string $key, array $placeholders = []): string
     {
         $lang = self::$locale->value;
         $message = self::$dictionary[$lang][$key] ?? self::$dictionary['en_US'][$key] ?? $key;
 
-        foreach ($replace as $placeholder => $value) {
-            $message = str_replace(':'.$placeholder, (string) $value, $message);
+        foreach ($placeholders as $k => $v) {
+            $message = str_replace(':' . $k, (string) $v, $message);
         }
 
         return $message;

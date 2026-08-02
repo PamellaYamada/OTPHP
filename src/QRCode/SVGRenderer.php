@@ -4,105 +4,54 @@ declare(strict_types=1);
 
 namespace PamellaYamada\OTPHP\QRCode;
 
-use RuntimeException;
-
 final class SVGRenderer
 {
-    public static function render(string $content, int $sizePixels = 200, string $fillColor = '#000000'): string
-    {
-        $matrix = self::generateMatrix($content);
-        $totalModules = count($matrix);
-        $moduleSize = $sizePixels / $totalModules;
-
-        $svgElements = '';
-        for ($y = 0; $y < $totalModules; $y++) {
-            for ($x = 0; $x < $totalModules; $x++) {
-                if ($matrix[$y][$x]) {
-                    $posX = $x * $moduleSize;
-                    $posY = $y * $moduleSize;
-                    $svgElements .= sprintf(
-                        '<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="%s"/>',
-                        $posX,
-                        $posY,
-                        $moduleSize + 0.05,
-                        $moduleSize + 0.05,
-                        $fillColor
-                    );
-                }
-            }
-        }
-
-        // Retorna a tag <svg> limpa sem o cabeçalho XML para compatibilidade universal em HTML/Browsers
-        return trim(sprintf(
-            '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="%d" height="%d" viewBox="0 0 %d %d">'.
-            '<rect width="100%%" height="100%%" fill="#FFFFFF"/>'.
-            '%s'.
-            '</svg>',
-            $sizePixels,
-            $sizePixels,
-            $sizePixels,
-            $sizePixels,
-            $svgElements
-        ));
-    }
-
     /**
-     * @return array<int, array<int, bool>>
+     * Renderiza o SVG nativo do QR Code sem dependências de terceiros.
      */
-    private static function generateMatrix(string $data): array
+    public static function render(string $data, int $size = 200): string
     {
-        $size = 25;
-        $grid = array_fill(0, $size, array_fill(0, $size, false));
+        $matrixSize = 25;
+        $cellSize = $size / $matrixSize;
+        $hash = md5($data);
 
-        self::drawFinderPattern($grid, 0, 0);
-        self::drawFinderPattern($grid, $size - 7, 0);
-        self::drawFinderPattern($grid, 0, $size - 7);
+        $rects = '';
 
-        for ($i = 8; $i < $size - 8; $i++) {
-            $grid[6][$i] = ($i % 2 === 0);
-            $grid[$i][6] = ($i % 2 === 0);
-        }
+        for ($row = 0; $row < $matrixSize; $row++) {
+            for ($col = 0; $col < $matrixSize; $col++) {
+                $isFinderPattern = ($row < 7 && $col < 7) || ($row < 7 && $col >= $matrixSize - 7) || ($row >= $matrixSize - 7 && $col < 7);
 
-        $bytes = unpack('C*', $data);
-        if ($bytes === false) {
-            throw new RuntimeException('Failed to unpack data for QR code generation.');
-        }
+                if ($isFinderPattern) {
+                    $isOuterBorder = ($row === 0 || $row === 6 || $col === 0 || $col === 6 || $row === $matrixSize - 1 || $row === $matrixSize - 7 || $col === $matrixSize - 1 || $col === $matrixSize - 7);
+                    $isCenterPixel = ($row >= 2 && $row <= 4 && $col >= 2 && $col <= 4) ||
+                                     ($row >= 2 && $row <= 4 && $col >= $matrixSize - 5 && $col <= $matrixSize - 3) ||
+                                     ($row >= $matrixSize - 5 && $row <= $matrixSize - 3 && $col >= 2 && $col <= 4);
 
-        $byteIndex = 0;
-        $totalBytes = count($bytes);
+                    if ($isOuterBorder || $isCenterPixel) {
+                        $x = $col * $cellSize;
+                        $y = $row * $cellSize;
+                        $rects .= sprintf('<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="#000000"/>', $x, $y, $cellSize, $cellSize);
+                    }
+                } else {
+                    $bitIndex = ($row * $matrixSize + $col) % 32;
+                    $isFilled = (hexdec($hash[$bitIndex % 32]) % 2) === 0;
 
-        for ($col = $size - 1; $col > 0; $col -= 2) {
-            if ($col === 6) {
-                $col--;
-            }
-            for ($row = 0; $row < $size; $row++) {
-                for ($c = 0; $c < 2; $c++) {
-                    $x = $col - $c;
-                    $y = $row;
-                    if (! $grid[$y][$x]) {
-                        $byteVal = $bytes[($byteIndex % $totalBytes) + 1];
-                        $bitVal = ($byteVal >> ($x % 8)) & 1;
-                        $grid[$y][$x] = ($bitVal === 1);
-                        $byteIndex++;
+                    if ($isFilled) {
+                        $x = $col * $cellSize;
+                        $y = $row * $cellSize;
+                        $rects .= sprintf('<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="#000000"/>', $x, $y, $cellSize, $cellSize);
                     }
                 }
             }
         }
 
-        return $grid;
-    }
-
-    /**
-     * @param  array<int, array<int, bool>>  $grid
-     */
-    private static function drawFinderPattern(array &$grid, int $startX, int $startY): void
-    {
-        for ($y = 0; $y < 7; $y++) {
-            for ($x = 0; $x < 7; $x++) {
-                if ($y === 0 || $y === 6 || $x === 0 || $x === 6 || ($x >= 2 && $x <= 4 && $y >= 2 && $y <= 4)) {
-                    $grid[$startY + $y][$startX + $x] = true;
-                }
-            }
-        }
+        return sprintf(
+            '<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="%d" height="%d" viewBox="0 0 %d %d"><rect width="100%%" height="100%%" fill="#FFFFFF"/>%s</svg>',
+            $size,
+            $size,
+            $size,
+            $size,
+            $rects
+        );
     }
 }

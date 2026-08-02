@@ -3,18 +3,19 @@ name: CI & Quality Checks
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
 
 jobs:
   test:
-    name: PHP ${{ matrix.php }} - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        php: ['8.3', '8.4']
+        php: ['8.3', '8.4', '8.5']
+
+    name: PHP ${{ matrix.php }}
 
     steps:
       - name: Checkout code
@@ -24,10 +25,17 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
+          extensions: mbstring, dom, fileinfo, gd, gmp
           coverage: none
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Run Quality Checks
-        run: composer check
+      - name: Validate composer.json and composer.lock
+        run: composer validate --strict
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --configuration=phpstan.neon
+
+      - name: Run PHPUnit Tests
+        run: vendor/bin/phpunit --do-not-cache-result
